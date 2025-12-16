@@ -1,0 +1,51 @@
+name: Project Automation
+on:
+  issues:
+    types: [opened]
+  project_card:
+    types: [created]
+
+jobs:
+  auto-add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 自动添加新Issue到Project
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/users/${{ github.repository_owner }}/projects/1
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          
+  auto-label:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues'
+    steps:
+      - name: 根据标题自动添加标签
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const title = context.payload.issue.title;
+            
+            if (title.startsWith('[BUG]')) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                labels: ['bug']
+              });
+            }
+            if (title.startsWith('[功能]')) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                labels: ['enhancement']
+              });
+            }
+            if (title.startsWith('[美术]')) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                labels: ['art']
+              });
+            }
