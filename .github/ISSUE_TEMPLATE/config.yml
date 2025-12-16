@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🎮 游戏设计讨论
+    url: https://github.com/你的用户名/your-game-name/discussions/categories/game-design
+    about: 讨论游戏机制、关卡设计等创意内容
+  - name: 🐛 报告游戏Bug
+    url: https://github.com/你的用户名/your-game-name/issues/new?template=bug-report.md
+    about: 报告游戏中遇到的问题
+  - name: 💡 请求新功能
+    url: https://github.com/你的用户名/your-game-name/issues/new?template=feature-request.md
+    about: 建议添加新功能或改进
