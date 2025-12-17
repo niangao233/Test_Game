@@ -1,9 +1,7 @@
-# ============================================
-# Unity 专用 .gitignore
-# 放在项目根目录，文件名：.gitignore
-# ============================================
-
-# Unity 自动生成文件（绝对不能上传！）
+# 将此 .gitignore 文件放置在你的 Unity 项目根目录下
+#
+# 从此获取最新版本：https://github.com/github/gitignore/blob/master/Unity.gitignore
+#
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
@@ -12,61 +10,63 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 
-# 内存捕获
+# MemoryCaptures 文件夹可能会非常大
+# 它们也可能包含极其敏感的数据
 /[Mm]emoryCaptures/
 
-# 资源导入器
-/[Aa]sset[s]toreassets/
+# 只有当对应的资源文件被忽略时，对应的 .meta 文件才应被忽略
+!/[Aa]ssets/**/*.meta
 
-# Visual Studio 生成文件
+# 如果你希望忽略 Asset Store Tools 插件，请取消注释下行
+# /[Aa]ssets/AssetStoreTools*
+
+# 自动生成的 Jetbrains Rider 插件
+/[Aa]ssets/Plugins/Editor/JetBrains*
+
+# Visual Studio 或 VSCode 缓存目录
+.vs/
+.vscode/
+
+# Gradle 缓存目录
+.gradle/
+
+# 自动生成的 VS/MD/Consulo 解决方案和项目文件
+ExportedObj/
+.consulo/
 *.csproj
+*.unityproj
 *.sln
 *.suo
+*.tmp
 *.user
 *.userprefs
-
-# VS Code
-.vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-
-# Rider
-.idea/
-
-# 操作系统文件
-.DS_Store
-Thumbs.db
-
-# 包管理器
-[Pp]ackages/
-
-# 不要上传这些Unity包
-/[Aa]ssets/AssetStoreTools*
-
-# 自动生成的Unity文件
 *.pidb
+*.booproj
+*.svd
 *.pdb
+*.mdb
 *.opendb
 *.VC.db
 
-# 构建输出
+# Unity3D 生成的 meta 文件
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# Unity3D 在崩溃报告时生成的文件
+sysinfo.txt
+
+# 构建产物
 *.apk
 *.aab
 *.unitypackage
 
-# ============================================
-# 你自己的规则（根据项目调整）
-# ============================================
+# Crashlytics 生成的文件
+crashlytics-build.properties
 
-# 临时文件
-*.tmp
-*.temp
+# 已打包的 Addressables 文件
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
 
-# 日志文件
-*.log
-
-# 大文件（根据情况添加）
-# *.psd
-# *.wav
-# *.mp4
+# 临时自动生成的 Android 资源
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/*
