@@ -1,6 +1,6 @@
 ---
 name: "\U0001F4A1 功能请求"
-about: 功能哈哈
+about: 创建新功能
 title: "[功能] "
 labels: ''
 assignees: ''

@@ -2,8 +2,8 @@
 name: "\U0001F3A8 美术任务"
 about: 游戏美术资源
 title: "[美术] "
-labels: Bug
-assignees: niangao233
+labels: ''
+assignees: ''
 
 ---
 
