@@ -1,9 +1,10 @@
 ---
-name: 💡 功能请求
-description: 建议新功能或改进
+name: "\U0001F4A1 功能请求"
+about: 功能哈哈
 title: "[功能] "
-labels: ["enhancement", "needs-review"]
-assignees: ""
+labels: ''
+assignees: ''
+
 ---
 
 ## 🎯 功能概述

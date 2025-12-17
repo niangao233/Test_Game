@@ -1,9 +1,10 @@
 ---
-name: 🐛 Bug报告
-description: 报告游戏中遇到的问题
+name: "\U0001F41B Bug报告"
+about: 出现的bug
 title: "[BUG] "
-labels: ["bug", "needs-triage"]
-assignees: ""
+labels: ''
+assignees: ''
+
 ---
 
 ## 🐞 问题描述

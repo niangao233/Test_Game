@@ -1,9 +1,10 @@
 ---
-name: 🎨 美术任务
-description: 需要制作的美术资源
+name: "\U0001F3A8 美术任务"
+about: 游戏美术资源
 title: "[美术] "
-labels: ["art"]
-assignees: ""
+labels: Bug
+assignees: niangao233
+
 ---
 
 ## 🖼️ 资源描述
