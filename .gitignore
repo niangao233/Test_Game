@@ -1,0 +1,72 @@
+# ============================================
+# Unity 专用 .gitignore
+# 放在项目根目录，文件名：.gitignore
+# ============================================
+
+# Unity 自动生成文件（绝对不能上传！）
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+
+# 内存捕获
+/[Mm]emoryCaptures/
+
+# 资源导入器
+/[Aa]sset[s]toreassets/
+
+# Visual Studio 生成文件
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Rider
+.idea/
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 包管理器
+[Pp]ackages/
+
+# 不要上传这些Unity包
+/[Aa]ssets/AssetStoreTools*
+
+# 自动生成的Unity文件
+*.pidb
+*.pdb
+*.opendb
+*.VC.db
+
+# 构建输出
+*.apk
+*.aab
+*.unitypackage
+
+# ============================================
+# 你自己的规则（根据项目调整）
+# ============================================
+
+# 临时文件
+*.tmp
+*.temp
+
+# 日志文件
+*.log
+
+# 大文件（根据情况添加）
+# *.psd
+# *.wav
+# *.mp4
