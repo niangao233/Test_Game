@@ -1,84 +1,41 @@
-# name: Sync Markdown Issues
-
-# on:
-#   push:
-#     branches: 
-#       - "**"   # 改为明确的 main 分支
-#     paths:
-#       - 'docs/issues/**/*.md'
-
-# jobs:
-#   sync:
-#     runs-on: ubuntu-latest
-#     permissions:
-#       issues: write
-#       contents: read  # 添加这个权限
-
-#     steps:
-#     - name: Checkout 代码
-#       uses: actions/checkout@v4
-#       with:
-#         fetch-depth: 0
-
-#     - name: 设置 Node.js
-#       uses: actions/setup-node@v4
-#       with:
-#         node-version: '20'
-#         cache: 'npm'  # 添加缓存加速
-#         cache-dependency-path: 'docs/scripts/package.json'  # 指定缓存依赖路径
-
-#     - name: 安装依赖
-#       working-directory: ./docs/scripts  # 使用 working-directory 更清晰
-#       run: |
-#         npm ci --only=production  # 使用 ci 而不是 install,更可靠
-
-#     - name: 同步 Issue
-#       working-directory: ./docs/scripts
-#       env:
-#         # 关键：环境变量名必须是 GITHUB_TOKEN
-#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#       run: node sync-issue-from-md.js
-
 name: Sync Markdown Issues
 
 on:
   push:
-    branches: [ main ]
+    branches: 
+      - "**"   # 改为明确的 main 分支
     paths:
-      - 'docs/issues/**'
-
-# 在事件级别声明权限
-permissions:
-  issues: write
-  contents: read
+      - 'docs/issues/**/*.md'
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    
+    permissions:
+      issues: write
+      contents: read  # 添加这个权限
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      
-      - name: Debug permissions
-        run: |
-          echo "环境变量检查:"
-          echo "GITHUB_TOKEN 长度: ${#GITHUB_TOKEN}"
-          echo "工作目录: $(pwd)"
-          echo "仓库: $GITHUB_REPOSITORY"
-          echo "触发者: $GITHUB_ACTOR"
-      
-      - name: Run sync script
-        working-directory: docs/scripts
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "=== 脚本执行开始 ==="
-          node debug.js
+    - name: Checkout 代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'  # 添加缓存加速
+        cache-dependency-path: 'docs/scripts/package.json'  # 指定缓存依赖路径
+
+    - name: 安装依赖
+      working-directory: ./docs/scripts  # 使用 working-directory 更清晰
+      run: |
+        npm ci --only=production  # 使用 ci 而不是 install,更可靠
+
+    - name: 同步 Issue
+      working-directory: ./docs/scripts
+      env:
+        # 关键：环境变量名必须是 GITHUB_TOKEN
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: node sync-issue-from-md.js
+
