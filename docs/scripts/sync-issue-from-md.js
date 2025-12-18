@@ -153,6 +153,28 @@ async function run() {
             console.log(`   🔗 Issue链接: ${createResponse.data.html_url}`);
             processedCount++;
             
+            // 在 sync-issue-from-md.js 的成功处理部分添加
+            if (actualIssueNumber !== issueNumber) {
+              console.log(`   🔄 编号不匹配: 文件期望 #${issueNumber}，GitHub分配了 #${actualIssueNumber}`);
+  
+              // 自动重命名文件
+              const oldPath = fullPath;
+              const newFileName = `${actualIssueNumber.toString().padStart(3, '0')}-${description}.md`;
+              const newPath = path.join(path.dirname(fullPath), newFileName);
+  
+              fs.renameSync(oldPath, newPath);
+              console.log(`   📝 自动重命名文件: ${path.basename(oldPath)} → ${newFileName}`);
+  
+              // 更新文件内容中的编号
+              let updatedContent = issueContent.replace(
+              new RegExp(`^#${issueNumber}:`, 'm'),
+              `#${actualIssueNumber}:`
+              );
+              fs.writeFileSync(newPath, updatedContent, 'utf8');
+  
+              console.log(`   ✅ 文件已同步更新为 #${actualIssueNumber}`);
+          }
+
             // 如果编号不匹配，给出警告
             if (actualIssueNumber !== issueNumber) {
               console.warn(`   ⚠️ 编号不匹配: 文件期望 #${issueNumber}, GitHub分配了 #${actualIssueNumber}`);
