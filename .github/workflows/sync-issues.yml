@@ -37,6 +37,6 @@ jobs:
       working-directory: ./docs/scripts
       env:
         # 关键：环境变量名必须是 GITHUB_TOKEN
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: 	${{ secrets.Test_Game }}
       run: node sync-issue-from-md.js
 
