@@ -6,7 +6,7 @@ const path = require('path');
 async function run() {
   try {
     // ==================== 1. 初始化 ====================
-    const token = process。env.GITHUB_TOKEN;
+    const token = process.env.GITHUB_TOKEN;
     const octokit = github.getOctokit(token);
     const context = github.context;
 
