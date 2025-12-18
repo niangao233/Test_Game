@@ -1,3 +1,4 @@
+#哈哈哈没想到吧！！
 # 将此 .gitignore 文件放置在你的 Unity 项目根目录下
 #
 # 从此获取最新版本：https://github.com/github/gitignore/blob/master/Unity.gitignore
@@ -70,6 +71,3 @@ crashlytics-build.properties
 # 临时自动生成的 Android 资源
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
-————————————————
-版权声明：本文为CSDN博主「tealcwu」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
-原文链接：https://blog.csdn.net/tealcwu/article/details/144411346
