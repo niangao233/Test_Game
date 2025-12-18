@@ -24,9 +24,8 @@ async function run() {
     console.log(`📦 仓库: ${owner}/${repo}`);
     console.log(`🎯 触发事件: ${context.eventName}`);
     
-    // 3. ★★★ 关键修改：直接扫描目录，不再依赖 commits 数据 ★★★
+    // 3. 扫描目录
     const issuesDir = path.join(process.env.GITHUB_WORKSPACE || '.', 'docs/issues/');
-    
     console.log(`📁 扫描目录: ${issuesDir}`);
     
     // 检查目录是否存在
@@ -39,32 +38,16 @@ async function run() {
     // 获取目录下所有 .md 文件
     const allFiles = fs.readdirSync(issuesDir)
       .filter(f => f.endsWith('.md') && f.match(/^(\d+)-(.+)\.md$/))
-      .sort();
+      .sort((a, b) => {
+        const numA = parseInt(a.match(/^(\d+)-/)[1]);
+        const numB = parseInt(b.match(/^(\d+)-/)[1]);
+        return numA - numB;
+      });
     
     console.log(`📁 找到 ${allFiles.length} 个符合条件的文件:`);
     
     if (allFiles.length === 0) {
       console.log('ℹ️ 没有找到格式正确的文件');
-      console.log('💡 文件命名格式应为 "数字-描述.md"，如:');
-      console.log('   ✅ 001-更新玩家移动操作.md');
-      console.log('   ✅ 012-添加火球术音效.md');
-      console.log('   ❌ test.md (缺少数字前缀)');
-      console.log('   ❌ 001更新玩家.md (缺少连字符)');
-      
-      // 列出目录内容用于调试
-      const allItems = fs.readdirSync(issuesDir);
-      if (allItems.length > 0) {
-        console.log('\n📂 目录实际内容:');
-        allItems.forEach(item => {
-          const fullPath = path.join(issuesDir, item);
-          try {
-            const stats = fs.statSync(fullPath);
-            console.log(`   - ${item} (${stats.isDirectory() ? '目录' : '文件'})`);
-          } catch (e) {
-            console.log(`   - ${item} (无法访问)`);
-          }
-        });
-      }
       return;
     }
     
@@ -89,7 +72,7 @@ async function run() {
           continue;
         }
         
-        const issueNumber = parseInt(match[1], 10);
+        const fileNumber = parseInt(match[1], 10);
         const description = match[2];
         const filePath = path.join(issuesDir, fileName);
         
@@ -100,7 +83,7 @@ async function run() {
         }
         
         // 读取文件内容
-        const content = fs.readFileSync(filePath, 'utf8');
+        let content = fs.readFileSync(filePath, 'utf8');
         
         if (!content || content.trim().length === 0) {
           console.log(`⚠️ 跳过: 文件内容为空`);
@@ -108,7 +91,7 @@ async function run() {
         }
         
         // 提取标题（从第一行）
-        let title = description.replace(/-/g, ' '); // 将连字符替换为空格
+        let title = description.replace(/-/g, ' ');
         const firstLine = content.split('\n')[0].trim();
         const titleMatch = firstLine.match(/^#\d+:\s*(.+)$/);
         if (titleMatch) {
@@ -116,29 +99,79 @@ async function run() {
         }
         
         console.log(`📝 文件: ${fileName}`);
-        console.log(`   Issue编号: #${issueNumber}`);
+        console.log(`   期望编号: #${fileNumber}`);
         console.log(`   标题: "${title}"`);
         console.log(`   内容长度: ${content.length} 字符`);
         
+        // 5. 智能处理：跳过已占用的编号，查找可用编号
+        let actualIssueNumber = fileNumber;
+        let shouldSkip = false;
+        
+        for (let attempt = 0; attempt < 10; attempt++) {
+          try {
+            // 先尝试获取该编号的Issue信息
+            const existingIssue = await octokit.rest.issues.get({
+              owner,
+              repo,
+              issue_number: actualIssueNumber
+            });
+            
+            // 如果存在，检查类型和状态
+            if (existingIssue.data.pull_request) {
+              console.log(`   ⚠️ #${actualIssueNumber} 是Pull Request，尝试下一个编号`);
+              actualIssueNumber++;
+            } else if (existingIssue.data.state === 'closed') {
+              console.log(`   ⚠️ #${actualIssueNumber} 是已关闭的Issue，尝试重新打开`);
+              // 可以重新打开，跳出循环
+              break;
+            } else {
+              // 是开放状态的Issue，可以更新
+              console.log(`   📝 #${actualIssueNumber} 是已存在的开放Issue，将更新内容`);
+              break;
+            }
+          } catch (error) {
+            if (error.status === 404 || error.status === 410) {
+              // 404: 不存在, 410: 已删除 - 都可以使用
+              console.log(`   ✅ #${actualIssueNumber} 可用 (${error.status === 404 ? '不存在' : '已删除可重新打开'})`);
+              break;
+            } else {
+              // 其他错误
+              console.error(`   ❌ 检查编号时出错:`, error.message);
+              shouldSkip = true;
+              break;
+            }
+          }
+        }
+        
+        if (shouldSkip) {
+          console.log(`   ⏭️ 跳过文件 ${fileName}`);
+          errorCount++;
+          continue;
+        }
+        
+        // 6. 更新或创建Issue
         try {
-          // 尝试更新现有Issue
-          console.log(`   🔄 尝试更新Issue #${issueNumber}...`);
+          if (actualIssueNumber !== fileNumber) {
+            console.log(`   🔄 编号调整: 文件#${fileNumber} → Issue#${actualIssueNumber}`);
+          }
           
-          const updateResponse = await octokit.rest.issues.update({
+          // 尝试更新现有Issue
+          console.log(`   🔄 尝试更新Issue #${actualIssueNumber}...`);
+          
+          await octokit.rest.issues.update({
             owner,
             repo,
-            issue_number: issueNumber,
+            issue_number: actualIssueNumber,
             body: content
           });
           
-          console.log(`   ✅ 成功更新Issue #${issueNumber}`);
-          console.log(`   🔗 Issue链接: ${updateResponse.data.html_url}`);
+          console.log(`   ✅ 成功更新Issue #${actualIssueNumber}`);
           processedCount++;
           
         } catch (updateError) {
-          // 如果Issue不存在（404错误），则创建新的
-          if (updateError.status === 404) {
-            console.log(`   📝 Issue #${issueNumber} 不存在，创建新Issue...`);
+          // 如果Issue不存在（404/410错误），则创建新的
+          if (updateError.status === 404 || updateError.status === 410) {
+            console.log(`   📝 Issue #${actualIssueNumber} 不存在，创建新Issue...`);
             
             const createResponse = await octokit.rest.issues.create({
               owner,
@@ -148,56 +181,57 @@ async function run() {
               labels: ['auto-created', 'from-markdown']
             });
             
-            const actualIssueNumber = createResponse.data.number;
-            console.log(`   ✅ 创建新Issue #${actualIssueNumber}: "${title}"`);
+            const createdIssueNumber = createResponse.data.number;
+            console.log(`   ✅ 创建新Issue #${createdIssueNumber}: "${title}"`);
             console.log(`   🔗 Issue链接: ${createResponse.data.html_url}`);
             processedCount++;
             
-            // 在 sync-issue-from-md.js 的成功处理部分添加
-            if (actualIssueNumber !== issueNumber) {
-              console.log(`   🔄 编号不匹配: 文件期望 #${issueNumber}，GitHub分配了 #${actualIssueNumber}`);
-  
-              // 自动重命名文件
-              const oldPath = fullPath;
-              const newFileName = `${actualIssueNumber.toString().padStart(3, '0')}-${description}.md`;
-              const newPath = path.join(path.dirname(fullPath), newFileName);
-  
-              fs.renameSync(oldPath, newPath);
-              console.log(`   📝 自动重命名文件: ${path.basename(oldPath)} → ${newFileName}`);
-  
-              // 更新文件内容中的编号
-              let updatedContent = issueContent.replace(
-              new RegExp(`^#${issueNumber}:`, 'm'),
-              `#${actualIssueNumber}:`
-              );
-              fs.writeFileSync(newPath, updatedContent, 'utf8');
-  
-              console.log(`   ✅ 文件已同步更新为 #${actualIssueNumber}`);
-          }
-
-            // 如果编号不匹配，给出警告
-            if (actualIssueNumber !== issueNumber) {
-              console.warn(`   ⚠️ 编号不匹配: 文件期望 #${issueNumber}, GitHub分配了 #${actualIssueNumber}`);
-            }
-            
+            actualIssueNumber = createdIssueNumber; // 使用实际创建的编号
           } else {
             // 其他错误
             errorCount++;
-            console.error(`   ❌ 处理Issue #${issueNumber}时出错:`, updateError.message);
-            if (updateError.response) {
-              console.error(`      状态码: ${updateError.status}`);
-              console.error(`      错误信息: ${JSON.stringify(updateError.response.data)}`);
-            }
+            console.error(`   ❌ 处理Issue时出错:`, updateError.message);
+            continue;
           }
+        }
+        
+        // 7. ★★★ 关键：自动重命名文件以保持编号一致 ★★★
+        if (actualIssueNumber !== fileNumber) {
+          console.log(`   🔄 自动重命名以保持编号一致...`);
+          
+          // 新文件名
+          const newFileName = `${actualIssueNumber.toString().padStart(3, '0')}-${description}.md`;
+          const newFilePath = path.join(issuesDir, newFileName);
+          
+          // 更新文件内容中的编号
+          const updatedContent = content.replace(
+            new RegExp(`^#${fileNumber}:`, 'm'),
+            `#${actualIssueNumber}:`
+          );
+          
+          // 先写新文件
+          fs.writeFileSync(newFilePath, updatedContent, 'utf8');
+          console.log(`   📝 创建新文件: ${newFileName}`);
+          
+          // 删除旧文件（如果新旧文件名不同）
+          if (fileName !== newFileName) {
+            fs.unlinkSync(filePath);
+            console.log(`   🗑️ 删除旧文件: ${fileName}`);
+          }
+          
+          console.log(`   ✅ 文件编号已更新为 #${actualIssueNumber}`);
+        } else {
+          console.log(`   ✅ 文件编号与Issue编号一致，无需修改`);
         }
         
       } catch (fileError) {
         errorCount++;
         console.error(`❌ 处理文件 ${fileName} 时出错:`, fileError.message);
+        console.error(fileError.stack);
       }
     }
     
-    // 5. 总结
+    // 8. 总结
     console.log('\n' + '='.repeat(50));
     console.log(`📊 处理总结:`);
     console.log(`   📁 总文件数: ${allFiles.length}`);
@@ -208,8 +242,18 @@ async function run() {
       console.log(`\n🎉 处理完成！`);
       console.log(`👉 请访问以下链接查看结果:`);
       console.log(`   https://github.com/${owner}/${repo}/issues`);
-    } else if (errorCount > 0) {
-      console.log(`\n⚠️ 没有成功处理任何文件，请检查错误信息`);
+      
+      // 重新列出最终文件状态
+      const finalFiles = fs.readdirSync(issuesDir)
+        .filter(f => f.endsWith('.md') && f.match(/^(\d+)-(.+)\.md$/))
+        .sort();
+      
+      if (finalFiles.length > 0) {
+        console.log(`\n📁 最终文件列表（已自动对齐编号）:`);
+        finalFiles.forEach((file, index) => {
+          console.log(`   ${index + 1}. ${file}`);
+        });
+      }
     }
     
   } catch (error) {
