@@ -1,0 +1,36 @@
+name: Sync Markdown Issues
+
+on:
+  push:
+    branches: [ "**" ]  # 只在推送到主分支时触发
+    paths:
+      - 'docs/issues/**/*.md'    # 只监听 docs/issues/ 下的 .md 文件变更
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write  # 必须赋予写 Issues 的权限
+
+    steps:
+    - name: Checkout 代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取完整历史以检测变更
+
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: 安装依赖
+      run: |
+        cd docs
+        npm init -y
+        npm install @actions/core @actions/github
+
+    - name: 同步 Issue
+      env:
+        # 自动使用 GitHub 令牌
+        REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: node docs/sync-issue-from-md.js
