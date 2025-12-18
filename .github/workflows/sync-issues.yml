@@ -25,15 +25,15 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'  # 添加缓存加速
-        cache-dependency-path: 'docs/package.json'  # 指定缓存依赖路径
+        cache-dependency-path: 'docs/scripts/package.json'  # 指定缓存依赖路径
 
     - name: 安装依赖
-      working-directory: ./docs  # 使用 working-directory 更清晰
+      working-directory: ./docs/scripts  # 使用 working-directory 更清晰
       run: |
         npm ci --only=production  # 使用 ci 而不是 install,更可靠
 
     - name: 同步 Issue
-      working-directory: ./docs
+      working-directory: ./docs/scripts
       env:
         # 关键：环境变量名必须是 GITHUB_TOKEN
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
