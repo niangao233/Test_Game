@@ -2,7 +2,7 @@ name: Sync Markdown Issues
 
 on:
   push:
-    branches: [ main, develop ]  # 只在推送到主分支时触发
+    branches: [ "**" ]  # 只在推送到主分支时触发
     paths:
       - 'docs/issues/**/*.md'    # 只监听 docs/issues/ 下的 .md 文件变更
 
