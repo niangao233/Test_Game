@@ -1,0 +1,36 @@
+{
+    "files.exclude": {
+        "**/.DS_Store": true,
+        "**/.git": true,
+        "**/.gitmodules": true,
+        "**/.vs/": true,
+        "**/*.suo": true,
+        "**/*.user": true,
+        "**/*.userprefs": true,
+        "**/Library/": true,
+        "**/Temp/": true,
+        "**/Obj/": true,
+        "**/Build/": true,
+        "**/Builds/": true,
+        "**/Logs/": true,
+        "**/*.booproj": true,
+        "**/*.pidb": true,
+        "**/*.unityproj": true
+    },
+    "search.exclude": {
+        "**/Library/": true,
+        "**/Temp/": true,
+        "**/Obj/": true,
+        "**/Build/": true,
+        "**/Builds/": true,
+        "**/Logs/": true,
+        "**/Packages/": true
+    },
+    "files.associations": {
+        ".gitignore": "off",
+        "Packages/manifest.json": "json"
+    },
+    "dotnet.defaultSolution": "Test_Game.sln",
+    "git.ignoreLimitWarning": true,
+    "explorer.excludeGitIgnore": true
+}
