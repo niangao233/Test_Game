@@ -1,5 +1,8 @@
 name: Sync Markdown Issues
 
+permissions:
+    issues: write
+    contents: write  
 on:
   push:
     branches: 
@@ -10,9 +13,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      contents: write  # 添加这个权限
+   # 添加这个权限
 
     steps:
     - name: Checkout 代码
