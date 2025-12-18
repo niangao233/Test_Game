@@ -5,150 +5,197 @@ const path = require('path');
 
 async function run() {
   try {
-    // ==================== 1. 初始化 ====================
+    console.log('🚀 开始同步Markdown到GitHub Issues...');
+    
+    // 1. 获取令牌
     const token = process.env.GITHUB_TOKEN;
+    if (!token) {
+      console.error('❌ 错误: 未找到 GITHUB_TOKEN 环境变量');
+      process.exit(1);
+    }
+    
+    console.log('✅ 成功获取GitHub令牌');
+    
+    // 2. 初始化GitHub客户端
     const octokit = github.getOctokit(token);
     const context = github.context;
-
-    core.info(`触发事件: ${context.eventName}`);
-    core.info(`仓库: ${context.repo.owner}/${context.repo.repo}`);
-
-    // ==================== 2. 获取变更文件 ====================
-    const eventName = context.eventName;
-    let changedMdFiles = [];
-
-    if (eventName === 'push') {
-      const commits = context.payload.commits || [];
-      for (const commit of commits) {
-        changedMdFiles.push(...(commit.added || []));
-        changedMdFiles.push(...(commit.modified || []));
-      }
-    }
-
-    // 筛选 docs/issues/ 下的 .md 文件
-    const issueMdFiles = changedMdFiles.filter(file => 
-      file.startsWith('docs/issues/') && file.endsWith('.md')
-    );
-
-    if (issueMdFiles.length === 0) {
-      core.info('未检测到 docs/issues/ 目录下的 .md 文件变更。');
+    const { owner, repo } = context.repo;
+    
+    console.log(`📦 仓库: ${owner}/${repo}`);
+    console.log(`🎯 触发事件: ${context.eventName}`);
+    
+    // 3. ★★★ 关键修改：直接扫描目录，不再依赖 commits 数据 ★★★
+    const issuesDir = path.join(process.env.GITHUB_WORKSPACE || '.', 'docs/issues/');
+    
+    console.log(`📁 扫描目录: ${issuesDir}`);
+    
+    // 检查目录是否存在
+    if (!fs.existsSync(issuesDir)) {
+      console.log(`❌ 目录不存在: ${issuesDir}`);
+      console.log('💡 请创建 docs/issues/ 目录并添加 .md 文件');
       return;
     }
-
-    core.info(`发现 ${issueMdFiles.length} 个需要处理的文件:`);
-    issueMdFiles.forEach(file => core.info(`  - ${file}`));
-
-    // ==================== 3. 处理每个文件 ====================
-    for (const filePath of issueMdFiles) {
-      core.info(`\n>>> 开始处理: ${filePath}`);
+    
+    // 获取目录下所有 .md 文件
+    const allFiles = fs.readdirSync(issuesDir)
+      .filter(f => f.endsWith('.md') && f.match(/^(\d+)-(.+)\.md$/))
+      .sort();
+    
+    console.log(`📁 找到 ${allFiles.length} 个符合条件的文件:`);
+    
+    if (allFiles.length === 0) {
+      console.log('ℹ️ 没有找到格式正确的文件');
+      console.log('💡 文件命名格式应为 "数字-描述.md"，如:');
+      console.log('   ✅ 001-更新玩家移动操作.md');
+      console.log('   ✅ 012-添加火球术音效.md');
+      console.log('   ❌ test.md (缺少数字前缀)');
+      console.log('   ❌ 001更新玩家.md (缺少连字符)');
+      
+      // 列出目录内容用于调试
+      const allItems = fs.readdirSync(issuesDir);
+      if (allItems.length > 0) {
+        console.log('\n📂 目录实际内容:');
+        allItems.forEach(item => {
+          const fullPath = path.join(issuesDir, item);
+          try {
+            const stats = fs.statSync(fullPath);
+            console.log(`   - ${item} (${stats.isDirectory() ? '目录' : '文件'})`);
+          } catch (e) {
+            console.log(`   - ${item} (无法访问)`);
+          }
+        });
+      }
+      return;
+    }
+    
+    // 显示找到的文件
+    allFiles.forEach((file, index) => {
+      console.log(`   ${index + 1}. ${file}`);
+    });
+    
+    // 4. 处理每个文件
+    console.log('\n🔄 开始处理文件...');
+    let processedCount = 0;
+    let errorCount = 0;
+    
+    for (const fileName of allFiles) {
+      console.log(`\n=== 处理: ${fileName} ===`);
       
       try {
-        const fileName = path.basename(filePath, '.md');
-        
-        // 匹配 [数字]-[描述] 格式 (例如: 001-更新玩家移动操作)
-        const issueMatch = fileName.match(/^(\d+)-(.+)$/);
-        
-        if (!issueMatch) {
-          core.warning(`文件名格式不正确，应为 [数字]-[描述].md (如 001-更新玩家移动操作.md)，跳过处理。`);
+        // 解析文件名
+        const match = fileName.match(/^(\d+)-(.+)\.md$/);
+        if (!match) {
+          console.log(`⚠️ 跳过: 文件名格式不正确`);
           continue;
         }
-
-        const issueNumber = parseInt(issueMatch[1], 10);
-        const description = issueMatch[2].trim();
-        const fullPath = path.join(process.env.GITHUB_WORKSPACE, filePath);
+        
+        const issueNumber = parseInt(match[1], 10);
+        const description = match[2];
+        const filePath = path.join(issuesDir, fileName);
+        
+        // 检查文件是否存在
+        if (!fs.existsSync(filePath)) {
+          console.log(`⚠️ 跳过: 文件不存在 ${filePath}`);
+          continue;
+        }
         
         // 读取文件内容
-        if (!fs.existsSync(fullPath)) {
-          core.warning(`文件不存在: ${fullPath}`);
+        const content = fs.readFileSync(filePath, 'utf8');
+        
+        if (!content || content.trim().length === 0) {
+          console.log(`⚠️ 跳过: 文件内容为空`);
           continue;
         }
         
-        let issueContent = fs.readFileSync(fullPath, 'utf8');
-        
-        // ==================== 4. 确定 Issue 标题 ====================
-        let issueTitle = '';
-        
-        // 尝试从文件第一行提取标题 (格式: #001: 标题)
-        const firstLine = issueContent.split('\n')[0].trim();
+        // 提取标题（从第一行）
+        let title = description.replace(/-/g, ' '); // 将连字符替换为空格
+        const firstLine = content.split('\n')[0].trim();
         const titleMatch = firstLine.match(/^#\d+:\s*(.+)$/);
-        
         if (titleMatch) {
-          // 使用文件内的标题
-          issueTitle = titleMatch[1];
-          core.info(`从文件内容提取标题: ${issueTitle}`);
-        } else {
-          // 使用文件名中的描述作为标题
-          issueTitle = description;
-          core.info(`使用文件名描述作为标题: ${issueTitle}`);
+          title = titleMatch[1];
         }
-
-        // ==================== 5. 更新或创建 Issue ====================
+        
+        console.log(`📝 文件: ${fileName}`);
+        console.log(`   Issue编号: #${issueNumber}`);
+        console.log(`   标题: "${title}"`);
+        console.log(`   内容长度: ${content.length} 字符`);
+        
         try {
-          // 先尝试更新 (假设 Issue 已存在)
-          core.info(`尝试更新 Issue #${issueNumber}...`);
+          // 尝试更新现有Issue
+          console.log(`   🔄 尝试更新Issue #${issueNumber}...`);
           
-          await octokit.rest.issues.update({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
+          const updateResponse = await octokit.rest.issues.update({
+            owner,
+            repo,
             issue_number: issueNumber,
-            body: issueContent
+            body: content
           });
           
-          core.info(`✅ 成功更新 Issue #${issueNumber}: ${issueTitle}`);
+          console.log(`   ✅ 成功更新Issue #${issueNumber}`);
+          console.log(`   🔗 Issue链接: ${updateResponse.data.html_url}`);
+          processedCount++;
           
         } catch (updateError) {
-          // 如果 Issue 不存在 (404错误)，则创建新的
+          // 如果Issue不存在（404错误），则创建新的
           if (updateError.status === 404) {
-            core.info(`Issue #${issueNumber} 不存在，将创建新 Issue...`);
+            console.log(`   📝 Issue #${issueNumber} 不存在，创建新Issue...`);
             
             const createResponse = await octokit.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: issueTitle,
-              body: issueContent,
-              labels: ['auto-created-from-md'] // 自动添加标签，便于识别
+              owner,
+              repo,
+              title: title,
+              body: content,
+              labels: ['auto-created', 'from-markdown']
             });
-
-            const actualIssueNumber = createResponse.data.number;
-            core.info(`✅ 成功创建新 Issue #${actualIssueNumber}: ${issueTitle}`);
             
-            // 检查编号是否匹配
+            const actualIssueNumber = createResponse.data.number;
+            console.log(`   ✅ 创建新Issue #${actualIssueNumber}: "${title}"`);
+            console.log(`   🔗 Issue链接: ${createResponse.data.html_url}`);
+            processedCount++;
+            
+            // 如果编号不匹配，给出警告
             if (actualIssueNumber !== issueNumber) {
-              core.warning(`⚠️ 编号不匹配: 文件期望 #${issueNumber}，但 GitHub 分配了 #${actualIssueNumber}`);
-              core.warning(`建议将文件重命名为: ${actualIssueNumber.toString().padStart(3, '0')}-${description}.md`);
-              
-              // 可选：自动更新文件中的编号引用
-              if (firstLine.match(/^#\d+:/)) {
-                const updatedContent = issueContent.replace(
-                  /^#\d+:/,
-                  `#${actualIssueNumber}:`
-                );
-                fs.writeFileSync(fullPath, updatedContent, 'utf8');
-                core.info(`已更新文件内的编号为 #${actualIssueNumber}`);
-              }
+              console.warn(`   ⚠️ 编号不匹配: 文件期望 #${issueNumber}, GitHub分配了 #${actualIssueNumber}`);
             }
             
           } else {
             // 其他错误
-            core.error(`处理 Issue #${issueNumber} 时出错: ${updateError.message}`);
-            throw updateError;
+            errorCount++;
+            console.error(`   ❌ 处理Issue #${issueNumber}时出错:`, updateError.message);
+            if (updateError.response) {
+              console.error(`      状态码: ${updateError.status}`);
+              console.error(`      错误信息: ${JSON.stringify(updateError.response.data)}`);
+            }
           }
         }
-
-      } catch (error) {
-        core.error(`处理文件 ${filePath} 时出错: ${error.message}`);
-        core.error(error.stack);
-        // 继续处理下一个文件，不中断工作流
+        
+      } catch (fileError) {
+        errorCount++;
+        console.error(`❌ 处理文件 ${fileName} 时出错:`, fileError.message);
       }
     }
-
-    core.info('\n🎉 所有文件处理完成！');
-
+    
+    // 5. 总结
+    console.log('\n' + '='.repeat(50));
+    console.log(`📊 处理总结:`);
+    console.log(`   📁 总文件数: ${allFiles.length}`);
+    console.log(`   ✅ 成功处理: ${processedCount}`);
+    console.log(`   ❌ 处理失败: ${errorCount}`);
+    
+    if (processedCount > 0) {
+      console.log(`\n🎉 处理完成！`);
+      console.log(`👉 请访问以下链接查看结果:`);
+      console.log(`   https://github.com/${owner}/${repo}/issues`);
+    } else if (errorCount > 0) {
+      console.log(`\n⚠️ 没有成功处理任何文件，请检查错误信息`);
+    }
+    
   } catch (error) {
-    core.setFailed(`❌ 工作流执行失败: ${error.message}`);
-    core.error(error.stack);
+    console.error('❌ 脚本执行失败:', error.message);
+    console.error(error.stack);
+    process.exit(1);
   }
 }
 
-// 执行脚本
+// 运行脚本
 run();
