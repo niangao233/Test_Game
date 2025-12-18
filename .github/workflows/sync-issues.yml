@@ -25,7 +25,7 @@ jobs:
 
     - name: 安装依赖
       run: |
-        cd scripts
+        cd docs
         npm init -y
         npm install @actions/core @actions/github
 
