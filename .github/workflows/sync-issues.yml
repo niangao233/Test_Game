@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      contents: read  # 添加这个权限
+      contents: write  # 添加这个权限
 
     steps:
     - name: Checkout 代码
