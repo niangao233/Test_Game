@@ -177,7 +177,7 @@ async function run() {
           if(actualIssueNumber !== fileNumber)
             {
               const c="[警告，此文件的Issue编号与文件名中的编号不一致，请手动修改文件名以匹配新的Issue编号]\n\n"+content;
-              const docsIndex = fullPath.indexOf('docs/');
+              const docsIndex = filePath.indexOf('docs/');
               const relativePath="";
               if (docsIndex !== -1) {
                relativePath = filePath.substring(docsIndex);}
