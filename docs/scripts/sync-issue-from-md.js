@@ -178,6 +178,7 @@ async function run() {
             {
               const c="[警告，此文件的Issue编号与文件名中的编号不一致，请手动修改文件名以匹配新的Issue编号]\n\n"+content;
               const docsIndex = filePath.indexOf('docs/');
+              const currentbranch=context.ref.replace('refs/heads/', '');
               let relativePath="";
               if (docsIndex !== -1) {
                relativePath = filePath.substring(docsIndex);}
@@ -186,7 +187,7 @@ async function run() {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 path: relativePath,  // 如 'docs/issues/001-title.md'
-                ref: 'main'
+                ref: currentbranch
             });
              await octokit.rest.repos.createOrUpdateFileContents({
                 owner: context.repo.owner,
@@ -195,7 +196,7 @@ async function run() {
                 message: commitMessage,
                 content: Buffer.from(c).toString('base64'),
                 sha: fileInfo.data.sha,
-                branch: 'main'
+                branch: currentbranch
             });
 
               console.log("此文件编号发生变动，已提示修改");
