@@ -160,8 +160,7 @@ async function run() {
           if(error.status===410){
             console.log(`   ℹ️ #${actualIssueNumber} 已被删除，不可用`);
           }
-          const title= filePath.match(/\d+-([^\/\.]+)\.md$/)?.[1];
-          console.log(title);
+          //是否应该创建issue判断
           if (error.status === 404 ) {
           console.log(`   🆕 #${actualIssueNumber} 不存在，将创建新Issue`); 
           //创建issue 
@@ -203,6 +202,7 @@ async function run() {
             });
 
               console.log("此文件编号发生变动，已提示修改");
+              continue;
             }
             else{
               console.log(`   检查编号是否一致...：通过。`);
@@ -232,9 +232,7 @@ async function run() {
           console.log(`   ✅ 成功更新Issue #${actualIssueNumber}`);
           
         } catch (updateError) {
-          // 创建新Issue
-          //console.log(updateError);
-
+          
             console.error(`   ❌ 更新Issue时出错:`, updateError.message);
             continue;
           
