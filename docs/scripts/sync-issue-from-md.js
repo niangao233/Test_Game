@@ -176,8 +176,8 @@ async function run() {
           //提醒用户md文件编号与issue编号不一致，要求其手动更改
           if(actualIssueNumber !== fileNumber)
             {
-              const c="[警告，此文件的Issue编号与文件名中的编号不一致，请手动修改文件名以匹配新的Issue编号]\n"
-              content=c+content;
+              let message="[警告，此文件的Issue编号与文件名中的编号不一致，请手动修改文件名以匹配新的Issue编号]\n"
+              let c=message+content;
               const docsIndex = filePath.indexOf('docs/');
               const currentbranch=context.ref.replace('refs/heads/', '');
               let relativePath="";
@@ -194,8 +194,8 @@ async function run() {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 path: relativePath,
-                message: c,
-                content: Buffer.from(content).toString('base64'),
+                message: message,
+                content: Buffer.from(c).toString('base64'),
                 sha: fileInfo.data.sha,
                 branch: currentbranch
             });
