@@ -141,7 +141,7 @@ async function run() {
             repo,
             issue_number: actualIssueNumber
           });
-          
+          console.log(existingIssue.data.state);
           // 检查是否可更新
           if (existingIssue.data.pull_request) {
             console.log(`   ⚠️ #${actualIssueNumber} 是PR，不可用`);
