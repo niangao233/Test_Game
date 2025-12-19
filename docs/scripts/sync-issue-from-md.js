@@ -185,6 +185,7 @@ async function run() {
           
         } catch (updateError) {
           // 创建新Issue
+          console.log(updateError);
           if (updateError.status === 404 || updateError.status === 410) {
             const createResponse = await octokit.rest.issues.create({
               owner,
