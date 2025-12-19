@@ -160,6 +160,8 @@ async function run() {
           if(error.status===410){
             console.log(`   ℹ️ #${actualIssueNumber} 已被删除，不可用`);
           }
+          const title= filePath.match(/\d+-([^\/\.]+)\.md$/)?.[1];
+          console.log(title);
           if (error.status === 404 ) {
           console.log(`   🆕 #${actualIssueNumber} 不存在，将创建新Issue`); 
           //创建issue 
