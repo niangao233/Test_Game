@@ -145,15 +145,16 @@ async function run() {
           // 检查是否可更新
           if (existingIssue.data.pull_request) {
             console.log(`   ⚠️ #${actualIssueNumber} 是PR，不可用`);
-            
+            continue;
           } else if (existingIssue.data.state === 'closed') {
             console.log(`   ℹ️ #${actualIssueNumber} 是已关闭的Issue，不可用`);
-            
+            continue;
           } else if (existingIssue.data.state === 'open') {
             console.log(`   📝 #${actualIssueNumber} 是开放Issue，将更新内容`);
             foundAvailable = true;
           }else{
             console.log(`   ⚠️ #${actualIssueNumber} 状态未知，不可用`);
+            continue;
           }
         } catch (error) {
           if(error.status===410){
@@ -171,6 +172,7 @@ async function run() {
             });
             actualIssueNumber = createResponse.data.number;
             console.log(`   ✅ 创建新Issue #${actualIssueNumber}: "${title}"`);
+            console.log(filePath);
           //提醒用户md文件编号与issue编号不一致，要求其手动更改
           if(actualIssueNumber !== fileNumber)
             {
@@ -229,41 +231,41 @@ async function run() {
           
         }
         
-        // 7. ★★★ 修复：智能文件重命名（避免重复触发）★★★
-        if (actualIssueNumber !== fileNumber) {
-          const newFileName = `${actualIssueNumber.toString().padStart(3, '0')}-${description}.md`;
-          const newFilePath = path.join(issuesDir, newFileName);
+        // // 7. ★★★ 修复：智能文件重命名（避免重复触发）★★★
+        // if (actualIssueNumber !== fileNumber) {
+        //   const newFileName = `${actualIssueNumber.toString().padStart(3, '0')}-${description}.md`;
+        //   const newFilePath = path.join(issuesDir, newFileName);
           
-          // 只有在新文件不存在时才重命名
-          if (!fs.existsSync(newFilePath)) {
-            // 更新内容中的编号
-            const updatedContent = content.replace(
-              new RegExp(`^#${fileNumber}:`, 'm'),
-              `#${actualIssueNumber}:`
-            );
+        //   // 只有在新文件不存在时才重命名
+        //   if (!fs.existsSync(newFilePath)) {
+        //     // 更新内容中的编号
+        //     const updatedContent = content.replace(
+        //       new RegExp(`^#${fileNumber}:`, 'm'),
+        //       `#${actualIssueNumber}:`
+        //     );
             
-            // 写入新文件
-            fs.writeFileSync(newFilePath, updatedContent, 'utf8');
-            console.log(`   📝 创建: ${newFileName}`);
+        //     // 写入新文件
+        //     fs.writeFileSync(newFilePath, updatedContent, 'utf8');
+        //     console.log(`   📝 创建: ${newFileName}`);
             
-            // 删除旧文件
-            if (fileName !== newFileName) {
-              fs.unlinkSync(filePath);
-              console.log(`   🗑️ 删除: ${fileName}`);
-            }
+        //     // 删除旧文件
+        //     if (fileName !== newFileName) {
+        //       fs.unlinkSync(filePath);
+        //       console.log(`   🗑️ 删除: ${fileName}`);
+        //     }
             
-            // 记录重命名，避免后续重复处理
-            renamedFiles.push(newFileName);
+        //     // 记录重命名，避免后续重复处理
+        //     renamedFiles.push(newFileName);
             
-            console.log(`   ✅ 文件重命名完成: #${fileNumber} → #${actualIssueNumber}`);
-          } else {
-            console.log(`   ⚠️ 新文件已存在，跳过重命名: ${newFileName}`);
-          }
-        } else {
-          console.log(`   ✅ 文件编号正确，无需修改`);
-        }
+        //     console.log(`   ✅ 文件重命名完成: #${fileNumber} → #${actualIssueNumber}`);
+        //   } else {
+        //     console.log(`   ⚠️ 新文件已存在，跳过重命名: ${newFileName}`);
+        //   }
+        // } else {
+        //   console.log(`   ✅ 文件编号正确，无需修改`);
+        // }
         
-        processedCount++;
+        // processedCount++;
         
       } catch (error) {
         console.error(`❌ 处理文件 ${fileName} 时出错:`, error.message);
