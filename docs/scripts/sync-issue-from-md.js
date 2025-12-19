@@ -130,41 +130,50 @@ async function run() {
         console.log(`   期望编号: #${fileNumber}`);
         console.log(`   标题: "${title}"`);
         
-        // 5. 智能查找可用Issue编号
+        // 5. 查找Issue编号
         let actualIssueNumber = fileNumber;
         let foundAvailable = false;
         
-        for (let attempt = 0; attempt < 5; attempt++) {
-          try {
-            const existingIssue = await octokit.rest.issues.get({
+        //判断issue状态，决定修改或创建
+        try {
+          const existingIssue = await octokit.rest.issues.get({
+            owner,
+            repo,
+            issue_number: actualIssueNumber
+          });
+          
+          // 检查是否可更新
+          if (existingIssue.data.pull_request) {
+            console.log(`   ⚠️ #${actualIssueNumber} 是PR，不可用`);
+            
+          } else if (existingIssue.data.state === 'closed') {
+            console.log(`   ℹ️ #${actualIssueNumber} 是已关闭的Issue，不可用`);
+            
+          } else if (existingIssue.data.state === 'open') {
+            console.log(`   📝 #${actualIssueNumber} 是开放Issue，将更新内容`);
+            foundAvailable = true;
+          }else{
+            console.log(`   ⚠️ #${actualIssueNumber} 状态未知，不可用`);
+          }
+        } catch (error) {
+          if (error.status === 404 ) {
+          console.log(`   🆕 #${actualIssueNumber} 不存在，将创建新Issue`); 
+          //创建issue 
+          const createResponse = await octokit.rest.issues.create({
               owner,
               repo,
-              issue_number: actualIssueNumber
+              title: title,
+              body: content,
+              labels: ['auto-created', 'from-markdown']
             });
-            
-            // 检查是否可更新
-            if (existingIssue.data.pull_request) {
-              console.log(`   ⚠️ #${actualIssueNumber} 是PR，尝试 #${actualIssueNumber + 1}`);
-              actualIssueNumber++;
-            } else if (existingIssue.data.state === 'closed') {
-              console.log(`   ℹ️ #${actualIssueNumber} 是已关闭的Issue，将重新打开`);
-              foundAvailable = true;
-              break;
-            } else {
-              console.log(`   📝 #${actualIssueNumber} 是开放Issue，将更新内容`);
-              foundAvailable = true;
-              break;
-            }
-          } catch (error) {
-            if (error.status === 404 || error.status === 410) {
-              console.log(`   ✅ #${actualIssueNumber} 可用`);
-              foundAvailable = true;
-              break;
-            }
-            console.error(`   ❌ 检查编号时出错:`, error.message);
-            break;
+            actualIssueNumber = createResponse.data.number;
+            console.log(`   ✅ 创建新Issue #${actualIssueNumber}: "${title}"`);
+          }else{
+            console.error(`   ❌ 创建Issue时出错:`, error.message);
+            continue;
           }
         }
+        
         
         if (!foundAvailable) {
           console.log(`   ❌ 未找到可用编号，跳过此文件`);
@@ -174,6 +183,7 @@ async function run() {
         // 6. 更新或创建Issue
         try {
           // 尝试更新
+          
           await octokit.rest.issues.update({
             owner,
             repo,
@@ -185,21 +195,11 @@ async function run() {
           
         } catch (updateError) {
           // 创建新Issue
-          console.log(updateError);
-          if (updateError.status === 404 || updateError.status === 410) {
-            const createResponse = await octokit.rest.issues.create({
-              owner,
-              repo,
-              title: title,
-              body: content,
-              labels: ['auto-created', 'from-markdown']
-            });
-            actualIssueNumber = createResponse.data.number;
-            console.log(`   ✅ 创建新Issue #${actualIssueNumber}: "${title}"`);
-          } else {
-            console.error(`   ❌ 处理Issue时出错:`, updateError.message);
+          //console.log(updateError);
+
+            console.error(`   ❌ 更新Issue时出错:`, updateError.message);
             continue;
-          }
+          
         }
         
         // 7. ★★★ 修复：智能文件重命名（避免重复触发）★★★
