@@ -161,7 +161,62 @@ async function run() {
             console.log(`   ℹ️ #${actualIssueNumber} 已被删除，不可用`);
           }
           //是否应该创建issue判断
-          if (error.status === 404 ) {
+          const issueTitles = [];
+          let page = 1;
+          try{
+              while(true){
+                const response = await octokit.rest.issues.listForRepo({
+                owner,
+                repo,
+                state: 'all',      // 包括 open 和 closed
+                per_page: 100,     // 每页最多 100 个
+                page: page
+              });
+             if (response.data.length === 0) break;
+             // 提取每个 Issue 的标题和编号
+                response.data.forEach(issue => {
+                  // 只记录 Issue，不记录 Pull Request
+                  if (!issue.pull_request) {
+                    issueTitles.push({
+                      number: issue.number,
+                      title: issue.title,
+                      state: issue.state,
+                      url: issue.html_url
+                    })}});
+             if (response.data.length < 100) break; // 最后一页
+            page++;
+        }
+      
+               
+
+          }catch(error){
+            console.error(`   ❌ 获取现有issue时出错:`, error.message);
+          }
+          let titleExists = false;
+          for (const issue of issueTitles) {
+            if (issue.title === title) {
+              titleExists = true;
+              console.log(`   ℹ️ 标题已存在于 #${issue.number} (${issue.state})，跳过创建`);
+              try {
+                // 尝试更新
+                await octokit.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: content,
+                  state: 'open' // 确保是打开状态
+                });
+                console.log(`   ✅ 成功更新Issue #${actualIssueNumber}`);
+          
+              } catch (updateError) {
+          
+                console.error(`   ❌ 更新Issue时出错:`, updateError.message);
+                continue;
+          
+        }
+            }
+          }
+          if (error.status === 404 && !titleExists ) {
           console.log(`   🆕 #${actualIssueNumber} 不存在，将创建新Issue`); 
           //创建issue 
           const createResponse = await octokit.rest.issues.create({
