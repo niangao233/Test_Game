@@ -156,6 +156,9 @@ async function run() {
             console.log(`   ⚠️ #${actualIssueNumber} 状态未知，不可用`);
           }
         } catch (error) {
+          if(error.status===410){
+            console.log(`   ℹ️ #${actualIssueNumber} 已被删除，不可用`);
+          }
           if (error.status === 404 ) {
           console.log(`   🆕 #${actualIssueNumber} 不存在，将创建新Issue`); 
           //创建issue 
@@ -168,10 +171,34 @@ async function run() {
             });
             actualIssueNumber = createResponse.data.number;
             console.log(`   ✅ 创建新Issue #${actualIssueNumber}: "${title}"`);
-          }else{
-            console.error(`   ❌ 创建Issue时出错:`, error.message);
+          //提醒用户md文件编号与issue编号不一致，要求其手动更改
+          if(actualIssueNumber !== fileNumber)
+            {
+              const c="[警告，此文件的Issue编号与文件名中的编号不一致，请手动修改文件名以匹配新的Issue编号]\n\n"+content;
+              const fileInfo = await octokit.rest.repos.getContent({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: filePath,  // 如 'docs/issues/001-title.md'
+                ref: 'main'
+            });
+             await octokit.rest.repos.createOrUpdateFileContents({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: filePath,
+                message: commitMessage,
+                content: Buffer.from(c).toString('base64'),
+                sha: fileInfo.data.sha,
+                branch: 'main'
+            });
+
+              console.log("此文件编号发生变动，已提示修改");
+            }
+            else{
+              console.log(`   检查编号是否一致...：通过。`);
+            }
             continue;
-          }
+          };
+          
         }
         
         
