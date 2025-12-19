@@ -172,21 +172,26 @@ async function run() {
             });
             actualIssueNumber = createResponse.data.number;
             console.log(`   ✅ 创建新Issue #${actualIssueNumber}: "${title}"`);
-            console.log(filePath);
+            //console.log(filePath);
           //提醒用户md文件编号与issue编号不一致，要求其手动更改
           if(actualIssueNumber !== fileNumber)
             {
               const c="[警告，此文件的Issue编号与文件名中的编号不一致，请手动修改文件名以匹配新的Issue编号]\n\n"+content;
+              const docsIndex = fullPath.indexOf('docs/');
+              const relativePath="";
+              if (docsIndex !== -1) {
+               relativePath = filePath.substring(docsIndex);}
+               console.log(relativePath);
               const fileInfo = await octokit.rest.repos.getContent({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                path: filePath,  // 如 'docs/issues/001-title.md'
+                path: relativePath,  // 如 'docs/issues/001-title.md'
                 ref: 'main'
             });
              await octokit.rest.repos.createOrUpdateFileContents({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                path: filePath,
+                path: relativePath,
                 message: commitMessage,
                 content: Buffer.from(c).toString('base64'),
                 sha: fileInfo.data.sha,
